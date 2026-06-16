@@ -5,32 +5,32 @@ import {
   Plus,
   Save,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-const baseWeekStart = new Date(2026, 5, 15);
-const dayInMs = 24 * 60 * 60 * 1000;
+const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const shiftSections = [
   {
-    id: "morning",
-    name: "Morning shift"
+    id: "matin",
+    name: "Service Matin"
   },
   {
-    id: "night",
-    name: "Night shift"
+    id: "soir",
+    name: "Service Soir"
   }
 ];
 
 const team = ["Julien", "Mehssen", "Mostafa", "Mario", "Ali Saade", "Rassil", "Racha", "Laura", "Ali Ahmad", "Jad", "Zelda"];
 
 const initialAssignments = [];
+const assignmentsStorageKey = "terrasse-schedule-assignments";
 const timePattern = /^\d{2}:\d{2}$/;
-const morningShiftLatestStart = "18:00";
+const matinShiftLatestStart = "18:00";
 const endingOptionsByShift = {
-  morning: [
+  matin: [
     { value: "fin de service", label: "Fin de service" }
   ],
-  night: [
+  soir: [
     { value: "fermeture", label: "Fermeture" },
     { value: "fin de service", label: "Fin de service" }
   ]
@@ -41,15 +41,15 @@ function isAtOrAfter(time, threshold) {
 }
 
 function getShiftRuleError(shift, start) {
-  if (shift === "morning" && isAtOrAfter(start, morningShiftLatestStart)) {
-    return "Morning shift starts must be before 18:00.";
+  if (shift === "matin" && isAtOrAfter(start, matinShiftLatestStart)) {
+    return "Matin shift starts must be before 18:00.";
   }
 
   return "";
 }
 
 function getValidEndMode(shift, endMode) {
-  if (shift === "morning" && endMode === "custom") {
+  if (shift === "matin" && endMode === "custom") {
     return endMode;
   }
 
@@ -65,6 +65,66 @@ function getValidEndMode(shift, endMode) {
 function getStaffColorClass(staff) {
   const index = team.indexOf(staff);
   return `staff-color-${index >= 0 ? index : 0}`;
+}
+
+function loadStoredAssignments() {
+  try {
+    const storedAssignments = window.localStorage.getItem(assignmentsStorageKey);
+
+    return storedAssignments ? JSON.parse(storedAssignments) : initialAssignments;
+  } catch {
+    return initialAssignments;
+  }
+}
+
+function getDocumentStyles() {
+  return Array.from(document.styleSheets)
+    .map((sheet) => {
+      try {
+        return Array.from(sheet.cssRules)
+          .map((rule) => rule.cssText)
+          .join("\n");
+      } catch {
+        return "";
+      }
+    })
+    .join("\n");
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+async function loadPersistedAssignments() {
+  const response = await fetch("/api/schedule");
+
+  if (!response.ok) {
+    throw new Error("Could not load schedule");
+  }
+
+  const data = await response.json();
+
+  return Array.isArray(data.assignments) ? data.assignments : initialAssignments;
+}
+
+async function savePersistedAssignments(assignments) {
+  const response = await fetch("/api/schedule", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ assignments })
+  });
+
+  if (!response.ok) {
+    throw new Error("Could not save schedule");
+  }
 }
 
 function EndingOptions({
@@ -90,7 +150,7 @@ function EndingOptions({
           {option.label}
         </label>
       ))}
-      {shift === "morning" && (
+      {shift === "matin" && (
         <label className="ending-time direct-ending-time">
           <input
             type="time"
@@ -108,12 +168,16 @@ function EndingOptions({
 }
 
 function App() {
-  const [assignments, setAssignments] = useState(initialAssignments);
+  const scheduleBoardRef = useRef(null);
+  const [assignments, setAssignments] = useState(loadStoredAssignments);
   const [weekOffset, setWeekOffset] = useState(0);
-  const [selectedSlot, setSelectedSlot] = useState({ day: 0, shift: "night" });
+  const [selectedSlot, setSelectedSlot] = useState({ day: 0, shift: "soir" });
+  const [repeatDays, setRepeatDays] = useState([0]);
   const [pendingDrop, setPendingDrop] = useState(null);
   const [editingAssignmentId, setEditingAssignmentId] = useState(null);
   const [formError, setFormError] = useState("");
+  const [hasLoadedDiskStorage, setHasLoadedDiskStorage] = useState(false);
+  const [storageStatus, setStorageStatus] = useState("Loading saved schedule...");
   const [draft, setDraft] = useState({
     staff: team[0],
     start: "18:00",
@@ -121,19 +185,8 @@ function App() {
     endTime: "23:00"
   });
 
-  const weekStart = new Date(baseWeekStart.getTime() + weekOffset * 7 * dayInMs);
-  const days = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(weekStart.getTime() + index * dayInMs);
-
-    return {
-      key: index,
-      label: date.toLocaleDateString("en-US", { weekday: "short" }),
-      date: date.getDate(),
-      month: date.toLocaleDateString("en-US", { month: "short" })
-    };
-  });
-  const weekEnd = days[6];
-  const weekLabel = `${days[0].month} ${days[0].date}-${weekEnd.month === days[0].month ? "" : `${weekEnd.month} `}${weekEnd.date}`;
+  const days = weekDays.map((label, index) => ({ key: index, label }));
+  const weekLabel = "Monday - Sunday";
   const selectedShift = shiftSections.find((shift) => shift.id === selectedSlot.shift);
   const selectedAssignments = assignments.filter(
     (assignment) =>
@@ -142,6 +195,59 @@ function App() {
       assignment.shift === selectedSlot.shift
   );
   const isEditing = editingAssignmentId !== null;
+
+  useEffect(() => {
+    let shouldIgnore = false;
+
+    loadPersistedAssignments()
+      .then((savedAssignments) => {
+        if (shouldIgnore) {
+          return;
+        }
+
+        const browserBackup = loadStoredAssignments();
+        const assignmentsToUse =
+          savedAssignments.length === 0 && browserBackup.length > 0
+            ? browserBackup
+            : savedAssignments;
+
+        setAssignments(assignmentsToUse);
+        window.localStorage.setItem(
+          assignmentsStorageKey,
+          JSON.stringify(assignmentsToUse)
+        );
+        setStorageStatus("Saved to data/schedule.json");
+      })
+      .catch(() => {
+        if (!shouldIgnore) {
+          setStorageStatus("Using browser backup only");
+        }
+      })
+      .finally(() => {
+        if (!shouldIgnore) {
+          setHasLoadedDiskStorage(true);
+        }
+      });
+
+    return () => {
+      shouldIgnore = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedDiskStorage) {
+      return;
+    }
+
+    window.localStorage.setItem(
+      assignmentsStorageKey,
+      JSON.stringify(assignments)
+    );
+
+    savePersistedAssignments(assignments)
+      .then(() => setStorageStatus("Saved to data/schedule.json"))
+      .catch(() => setStorageStatus("Using browser backup only"));
+  }, [assignments, hasLoadedDiskStorage]);
 
   function getAssignments(day, shift) {
     return assignments.filter(
@@ -152,19 +258,117 @@ function App() {
     );
   }
 
-  function handleExport() {
-    document.title = `Terrasse schedule ${weekLabel}`;
+  function hasStaffConflict({ week, day, shift, staff, ignoredId = null }) {
+    return assignments.some(
+      (assignment) =>
+        assignment.id !== ignoredId &&
+        assignment.week === week &&
+        assignment.day === day &&
+        assignment.shift === shift &&
+        assignment.staff === staff
+    );
+  }
+
+  function getRepeatConflictMessage(targetDays, staff, shift, ignoredId = null) {
+    const conflictingDays = targetDays.filter((day) =>
+      hasStaffConflict({
+        week: weekOffset,
+        day,
+        shift,
+        staff,
+        ignoredId
+      })
+    );
+
+    if (conflictingDays.length === 0) {
+      return "";
+    }
+
+    const dayLabels = conflictingDays
+      .map((day) => days.find((item) => item.key === day)?.label)
+      .join(", ");
+
+    return `${staff} already has a slot in this shift on ${dayLabels}.`;
+  }
+
+  function handleExportPdf() {
+    document.title = "Terrasse weekly schedule";
     window.print();
+  }
+
+  async function handleExportJpg() {
+    const board = scheduleBoardRef.current;
+
+    if (!board) {
+      return;
+    }
+
+    const scale = 2;
+    const width = Math.ceil(board.scrollWidth);
+    const height = Math.ceil(board.scrollHeight);
+    const clonedBoard = board.cloneNode(true);
+
+    clonedBoard.style.width = `${width}px`;
+    clonedBoard.style.background = "#ffffff";
+
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+        <foreignObject width="100%" height="100%">
+          <div xmlns="http://www.w3.org/1999/xhtml">
+            <style>${getDocumentStyles()}</style>
+            ${clonedBoard.outerHTML}
+          </div>
+        </foreignObject>
+      </svg>
+    `;
+    const svgBlob = new Blob([svg], {
+      type: "image/svg+xml;charset=utf-8"
+    });
+    const imageUrl = URL.createObjectURL(svgBlob);
+    const image = new Image();
+
+    image.src = imageUrl;
+    await image.decode();
+
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(imageUrl);
+
+    canvas.toBlob(
+      (blob) => {
+        if (blob) {
+          downloadBlob(blob, "terrasse-weekly-schedule.jpg");
+        }
+      },
+      "image/jpeg",
+      0.95
+    );
   }
 
   function changeWeek(direction) {
     setWeekOffset((current) => current + direction);
     setSelectedSlot((current) => ({ ...current, day: 0 }));
+    setRepeatDays([0]);
     cancelEdit();
+  }
+
+  function selectSlot(day, shift) {
+    setSelectedSlot({ day, shift });
+
+    if (!isEditing) {
+      setRepeatDays([day]);
+    }
   }
 
   function startEditAssignment(assignment) {
     setSelectedSlot({ day: assignment.day, shift: assignment.shift });
+    setRepeatDays([assignment.day]);
     setEditingAssignmentId(assignment.id);
     setFormError("");
     setDraft({
@@ -177,11 +381,12 @@ function App() {
 
   function cancelEdit() {
     setEditingAssignmentId(null);
+    setRepeatDays([selectedSlot.day]);
     setFormError("");
     setDraft({
       staff: team[0],
-      start: selectedSlot.shift === "morning" ? "10:00" : "18:00",
-      end: selectedSlot.shift === "morning" ? "fin de service" : "fermeture",
+      start: selectedSlot.shift === "matin" ? "10:00" : "18:00",
+      end: selectedSlot.shift === "matin" ? "fin de service" : "fermeture",
       endTime: "15:00"
     });
   }
@@ -197,6 +402,23 @@ function App() {
 
     const endMode = getValidEndMode(selectedSlot.shift, draft.end);
     const end = endMode === "custom" ? draft.endTime : endMode;
+    const targetDays = isEditing
+      ? [selectedSlot.day]
+      : repeatDays.length > 0
+        ? repeatDays
+        : [selectedSlot.day];
+    const duplicateError = getRepeatConflictMessage(
+      targetDays,
+      draft.staff,
+      selectedSlot.shift,
+      isEditing ? editingAssignmentId : null
+    );
+
+    if (duplicateError) {
+      setFormError(duplicateError);
+      return;
+    }
+
     const assignmentPayload = {
       week: weekOffset,
       day: selectedSlot.day,
@@ -222,11 +444,22 @@ function App() {
 
     setAssignments((current) => [
       ...current,
-      {
-        id: Date.now(),
-        ...assignmentPayload
-      }
+      ...targetDays.map((day, index) => ({
+        ...assignmentPayload,
+        id: Date.now() + index,
+        day
+      }))
     ]);
+  }
+
+  function toggleRepeatDay(day) {
+    setRepeatDays((current) => {
+      if (current.includes(day)) {
+        return current.filter((item) => item !== day);
+      }
+
+      return [...current, day].sort((first, second) => first - second);
+    });
   }
 
   function handleRemoveAssignment(id) {
@@ -247,7 +480,7 @@ function App() {
       return;
     }
 
-    setSelectedSlot({ day, shift });
+    selectSlot(day, shift);
     setPendingDrop({
       assignmentId,
       day,
@@ -280,6 +513,18 @@ function App() {
 
     if (error) {
       setPendingDrop((current) => ({ ...current, error }));
+      return;
+    }
+
+    const duplicateError = getRepeatConflictMessage(
+      [pendingDrop.day],
+      assignment.staff,
+      pendingDrop.shift,
+      action === "move" ? pendingDrop.assignmentId : null
+    );
+
+    if (duplicateError) {
+      setPendingDrop((current) => ({ ...current, error: duplicateError }));
       return;
     }
 
@@ -325,6 +570,7 @@ function App() {
           <div>
             <p className="eyebrow">Owner dashboard</p>
             <h1>Weekly staffing schedule</h1>
+            <p className="storage-status">{storageStatus}</p>
           </div>
           <div className="toolbar" aria-label="Schedule actions">
             <button
@@ -342,23 +588,30 @@ function App() {
             >
               <ChevronRight size={18} />
             </button>
-            <button className="primary-button" onClick={handleExport}>
-              <Download size={17} />
-              Export PDF
-            </button>
+            <div className="export-actions">
+              <button className="secondary-button" onClick={handleExportPdf}>
+                <Download size={17} />
+                PDF
+              </button>
+              <button className="primary-button" onClick={handleExportJpg}>
+                <Download size={17} />
+                JPG
+              </button>
+            </div>
           </div>
         </header>
 
         <div className="content-grid">
-          <section className="schedule-board" aria-label="Weekly schedule">
+          <section
+            className="schedule-board"
+            aria-label="Weekly schedule"
+            ref={scheduleBoardRef}
+          >
             <div className="board-header">
               <span>Shift</span>
               {days.map((day) => (
                 <span key={day.key}>
                   <strong>{day.label}</strong>
-                  <small>
-                    {day.month} {day.date}
-                  </small>
                 </span>
               ))}
             </div>
@@ -379,15 +632,18 @@ function App() {
                         : "calendar-cell"
                     }
                     key={`${shift.id}-${day.key}`}
-                    onClick={() => setSelectedSlot({ day: day.key, shift: shift.id })}
+                    onClick={() => selectSlot(day.key, shift.id)}
                     onDragOver={(event) => event.preventDefault()}
                     onDrop={(event) => handleDrop(event, day.key, shift.id)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === " ") {
-                        setSelectedSlot({ day: day.key, shift: shift.id });
+                        selectSlot(day.key, shift.id);
                       }
                     }}
                   >
+                    <span className="mobile-cell-label">
+                      {day.label}
+                    </span>
                     {getAssignments(day.key, shift.id).map((assignment) => (
                       <span
                         className={`event-pill ${getStaffColorClass(assignment.staff)} ${
@@ -470,6 +726,21 @@ function App() {
                   setDraft((current) => ({ ...current, endTime: value }))
                 }
               />
+              {!isEditing && (
+                <fieldset className="repeat-days">
+                  <legend>Repeat on</legend>
+                  {days.map((day) => (
+                    <label key={day.key}>
+                      <input
+                        type="checkbox"
+                        checked={repeatDays.includes(day.key)}
+                        onChange={() => toggleRepeatDay(day.key)}
+                      />
+                      {day.label}
+                    </label>
+                  ))}
+                </fieldset>
+              )}
               <button className="primary-button" type="submit">
                 {isEditing ? <Save size={17} /> : <Plus size={17} />}
                 {isEditing ? "Save changes" : "Add staff"}

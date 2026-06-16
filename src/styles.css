@@ -86,10 +86,22 @@ h2 {
   font-size: 1rem;
 }
 
+.storage-status {
+  margin: 6px 0 0;
+  color: #667085;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
+  gap: 8px;
+}
+
+.export-actions {
+  display: flex;
   gap: 8px;
 }
 
@@ -345,6 +357,10 @@ input[type="time"] {
   font-size: 0.78rem;
 }
 
+.mobile-cell-label {
+  display: none;
+}
+
 .details-panel {
   display: grid;
   gap: 18px;
@@ -462,6 +478,16 @@ fieldset label {
   background: #fbfcfb;
 }
 
+.repeat-days {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.repeat-days label {
+  justify-content: center;
+  min-width: 0;
+  padding: 0 8px;
+}
+
 .ending-time {
   display: grid;
   grid-column: 1 / -1;
@@ -527,27 +553,140 @@ fieldset label {
 
 @media (max-width: 760px) {
   .workspace {
-    padding: 16px;
+    gap: 14px;
+    padding: 12px;
   }
 
   .topbar {
     align-items: flex-start;
     flex-direction: column;
+    gap: 12px;
+  }
+
+  h1 {
+    font-size: 1.45rem;
   }
 
   .toolbar {
-    justify-content: flex-start;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .export-actions {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .icon-button {
+    width: 44px;
+    min-height: 44px;
+  }
+
+  .week-button {
+    min-width: 0;
+    padding: 0 10px;
+    white-space: nowrap;
   }
 
   .schedule-board {
-    overflow-x: auto;
+    display: grid;
+    gap: 12px;
+    border: 0;
+    background: transparent;
+    overflow: visible;
   }
 
-  .board-header,
+  .board-header {
+    display: none;
+  }
+
   .board-row {
-    min-width: 820px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    min-width: 0;
+    border: 1px solid #dfe3de;
+    border-radius: 8px;
+    background: #ffffff;
+    overflow: hidden;
   }
 
+  .shift-label {
+    min-height: auto;
+    padding: 12px;
+    border-right: 0;
+    border-bottom: 1px solid #e7e9ee;
+  }
+
+  .calendar-cell {
+    min-height: 92px;
+    padding: 10px;
+    border-right: 0;
+  }
+
+  .mobile-cell-label {
+    display: block;
+    color: #667085;
+    font-size: 0.78rem;
+    font-weight: 800;
+  }
+
+  .event-pill {
+    min-height: 42px;
+  }
+
+  .details-panel {
+    gap: 14px;
+    padding: 14px;
+  }
+
+  fieldset {
+    grid-template-columns: 1fr;
+  }
+
+  .repeat-days {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .direct-ending-time {
+    grid-column: 1;
+  }
+
+  .primary-button,
+  .secondary-button {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .assignment-list li {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .assignment-list li > button:last-child {
+    align-self: flex-start;
+  }
+
+  .assignment-edit-button {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .drop-dialog {
+    align-self: end;
+    width: 100%;
+  }
+
+  .drop-dialog-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
 }
 
 @media print {

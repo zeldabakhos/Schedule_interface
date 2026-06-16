@@ -197,6 +197,7 @@ function App() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedSlot, setSelectedSlot] = useState({ day: 0, shift: "soir" });
   const [repeatDays, setRepeatDays] = useState([0]);
+  const [isMobileEditorOpen, setIsMobileEditorOpen] = useState(false);
   const [pendingDrop, setPendingDrop] = useState(null);
   const [editingAssignmentId, setEditingAssignmentId] = useState(null);
   const [formError, setFormError] = useState("");
@@ -444,15 +445,19 @@ function App() {
     cancelEdit();
   }
 
-  function selectSlot(day, shift) {
+  function selectSlot(day, shift, shouldOpenEditor = false) {
     setSelectedSlot({ day, shift });
 
     if (!isEditing) {
       setRepeatDays([day]);
     }
+
+    if (shouldOpenEditor) {
+      setIsMobileEditorOpen(true);
+    }
   }
 
-  function startEditAssignment(assignment) {
+  function startEditAssignment(assignment, shouldOpenEditor = false) {
     setSelectedSlot({ day: assignment.day, shift: assignment.shift });
     setRepeatDays([assignment.day]);
     setEditingAssignmentId(assignment.id);
@@ -463,6 +468,10 @@ function App() {
       end: timePattern.test(assignment.end) ? "custom" : assignment.end,
       endTime: timePattern.test(assignment.end) ? assignment.end : "15:00"
     });
+
+    if (shouldOpenEditor) {
+      setIsMobileEditorOpen(true);
+    }
   }
 
   function cancelEdit() {
@@ -475,6 +484,10 @@ function App() {
       end: selectedSlot.shift === "matin" ? "fin de service" : "fermeture",
       endTime: "15:00"
     });
+  }
+
+  function closeMobileEditor() {
+    setIsMobileEditorOpen(false);
   }
 
   function handleSubmitAssignment(event) {
@@ -525,6 +538,7 @@ function App() {
         )
       );
       setEditingAssignmentId(null);
+      setIsMobileEditorOpen(false);
       return;
     }
 
@@ -536,6 +550,7 @@ function App() {
         day
       }))
     ]);
+    setIsMobileEditorOpen(false);
   }
 
   function toggleRepeatDay(day) {
@@ -647,6 +662,122 @@ function App() {
     }
 
     setPendingDrop(null);
+  }
+
+  function renderAssignmentEditor() {
+    return (
+      <>
+        <div className="panel-header">
+          <div>
+            <p className="eyebrow">Selected slot</p>
+            <h2>{selectedShift.name}</h2>
+          </div>
+          <button
+            className="secondary-button mobile-editor-close"
+            onClick={closeMobileEditor}
+            type="button"
+          >
+            Close
+          </button>
+        </div>
+
+        <form className="assignment-form" onSubmit={handleSubmitAssignment}>
+          {isEditing && <p className="edit-mode-label">Editing shift</p>}
+          <label>
+            Staff member
+            <select
+              value={draft.staff}
+              onChange={(event) =>
+                setDraft((current) => ({ ...current, staff: event.target.value }))
+              }
+            >
+              {team.map((member) => (
+                <option key={member} value={member}>
+                  {member}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Starting hour
+            <input
+              type="time"
+              value={draft.start}
+              onChange={(event) =>
+                setDraft((current) => ({ ...current, start: event.target.value }))
+              }
+            />
+          </label>
+          <EndingOptions
+            name="end"
+            shift={selectedSlot.shift}
+            endMode={getValidEndMode(selectedSlot.shift, draft.end)}
+            endTime={draft.endTime}
+            onEndModeChange={(value) =>
+              setDraft((current) => ({ ...current, end: value }))
+            }
+            onEndTimeChange={(value) =>
+              setDraft((current) => ({ ...current, endTime: value }))
+            }
+          />
+          {!isEditing && (
+            <fieldset className="repeat-days">
+              <legend>Repeat on</legend>
+              {days.map((day) => (
+                <label key={day.key}>
+                  <input
+                    type="checkbox"
+                    checked={repeatDays.includes(day.key)}
+                    onChange={() => toggleRepeatDay(day.key)}
+                  />
+                  {day.label}
+                </label>
+              ))}
+            </fieldset>
+          )}
+          <button className="primary-button" type="submit">
+            {isEditing ? <Save size={17} /> : <Plus size={17} />}
+            {isEditing ? "Save changes" : "Add staff"}
+          </button>
+          {isEditing && (
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={cancelEdit}
+            >
+              Cancel edit
+            </button>
+          )}
+          {formError && <p className="form-error">{formError}</p>}
+        </form>
+
+        <ul className="assignment-list">
+          {selectedAssignments.map((assignment) => (
+            <li
+              className={
+                editingAssignmentId === assignment.id
+                  ? "editing-assignment"
+                  : ""
+              }
+              key={assignment.id}
+            >
+              <button
+                className="assignment-edit-button"
+                onClick={() => startEditAssignment(assignment)}
+              >
+                {assignment.staff}
+                <small>
+                  {assignment.start} - {assignment.end}
+                </small>
+              </button>
+              <button onClick={() => handleRemoveAssignment(assignment.id)}>
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      </>
+    );
   }
 
   return (
@@ -778,12 +909,12 @@ function App() {
                         : "mobile-shift-block"
                     }
                     key={`${day.key}-${shift.id}`}
-                    onClick={() => selectSlot(day.key, shift.id)}
+                    onClick={() => selectSlot(day.key, shift.id, true)}
                     onDragOver={(event) => event.preventDefault()}
                     onDrop={(event) => handleDrop(event, day.key, shift.id)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === " ") {
-                        selectSlot(day.key, shift.id);
+                        selectSlot(day.key, shift.id, true);
                       }
                     }}
                   >
@@ -797,7 +928,7 @@ function App() {
                         key={assignment.id}
                         onClick={(event) => {
                           event.stopPropagation();
-                          startEditAssignment(assignment);
+                          startEditAssignment(assignment, true);
                         }}
                         onDragStart={(event) => {
                           event.dataTransfer.effectAllowed = "copyMove";
@@ -823,112 +954,18 @@ function App() {
             ))}
           </section>
 
-          <aside className="details-panel">
-            <div className="panel-header">
-              <div>
-                <p className="eyebrow">Selected slot</p>
-                <h2>{selectedShift.name}</h2>
-              </div>
-            </div>
-
-            <form className="assignment-form" onSubmit={handleSubmitAssignment}>
-              {isEditing && <p className="edit-mode-label">Editing shift</p>}
-              <label>
-                Staff member
-                <select
-                  value={draft.staff}
-                  onChange={(event) =>
-                    setDraft((current) => ({ ...current, staff: event.target.value }))
-                  }
-                >
-                  {team.map((member) => (
-                    <option key={member} value={member}>
-                      {member}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Starting hour
-                <input
-                  type="time"
-                  value={draft.start}
-                  onChange={(event) =>
-                    setDraft((current) => ({ ...current, start: event.target.value }))
-                  }
-                />
-              </label>
-              <EndingOptions
-                name="end"
-                shift={selectedSlot.shift}
-                endMode={getValidEndMode(selectedSlot.shift, draft.end)}
-                endTime={draft.endTime}
-                onEndModeChange={(value) =>
-                  setDraft((current) => ({ ...current, end: value }))
-                }
-                onEndTimeChange={(value) =>
-                  setDraft((current) => ({ ...current, endTime: value }))
-                }
-              />
-              {!isEditing && (
-                <fieldset className="repeat-days">
-                  <legend>Repeat on</legend>
-                  {days.map((day) => (
-                    <label key={day.key}>
-                      <input
-                        type="checkbox"
-                        checked={repeatDays.includes(day.key)}
-                        onChange={() => toggleRepeatDay(day.key)}
-                      />
-                      {day.label}
-                    </label>
-                  ))}
-                </fieldset>
-              )}
-              <button className="primary-button" type="submit">
-                {isEditing ? <Save size={17} /> : <Plus size={17} />}
-                {isEditing ? "Save changes" : "Add staff"}
-              </button>
-              {isEditing && (
-                <button
-                  className="secondary-button"
-                  type="button"
-                  onClick={cancelEdit}
-                >
-                  Cancel edit
-                </button>
-              )}
-              {formError && <p className="form-error">{formError}</p>}
-            </form>
-
-            <ul className="assignment-list">
-              {selectedAssignments.map((assignment) => (
-                <li
-                  className={
-                    editingAssignmentId === assignment.id
-                      ? "editing-assignment"
-                      : ""
-                  }
-                  key={assignment.id}
-                >
-                  <button
-                    className="assignment-edit-button"
-                    onClick={() => startEditAssignment(assignment)}
-                  >
-                    {assignment.staff}
-                    <small>
-                      {assignment.start} - {assignment.end}
-                    </small>
-                  </button>
-                  <button onClick={() => handleRemoveAssignment(assignment.id)}>
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
+          <aside className="details-panel desktop-details-panel">
+            {renderAssignmentEditor()}
           </aside>
         </div>
       </section>
+      {isMobileEditorOpen && (
+        <div className="mobile-editor-backdrop">
+          <section className="mobile-editor-sheet">
+            {renderAssignmentEditor()}
+          </section>
+        </div>
+      )}
       {pendingDrop && (
         <div className="drop-dialog-backdrop">
           <section className="drop-dialog" aria-label="Drop assignment choice">

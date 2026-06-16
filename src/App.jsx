@@ -5,7 +5,7 @@ import {
   Plus,
   Save,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -21,6 +21,19 @@ const shiftSections = [
 ];
 
 const team = ["Julien", "Mehssen", "Mostafa", "Mario", "Ali Saade", "Rassil", "Racha", "Laura", "Ali Ahmad", "Jad", "Zelda"];
+const staffPalette = [
+  { text: "#16433d", background: "#dff5ee", border: "#35a285" },
+  { text: "#5c2f6f", background: "#f3ddff", border: "#b15fd2" },
+  { text: "#653718", background: "#ffe8d1", border: "#e38b3f" },
+  { text: "#173c67", background: "#e3f0ff", border: "#4f8fd8" },
+  { text: "#7c2d12", background: "#ffddd2", border: "#f26b3d" },
+  { text: "#41551a", background: "#edf7c9", border: "#8fae3f" },
+  { text: "#6b4b00", background: "#fff3c4", border: "#e4b82f" },
+  { text: "#0d4b67", background: "#d9f5ff", border: "#35a6c8" },
+  { text: "#4f255f", background: "#ead9f4", border: "#8f55a8" },
+  { text: "#2f4a25", background: "#dfefd9", border: "#6a9f5b" },
+  { text: "#7b3155", background: "#ffe4f0", border: "#ef9bc2" }
+];
 
 const initialAssignments = [];
 const assignmentsStorageKey = "terrasse-schedule-assignments";
@@ -77,20 +90,6 @@ function loadStoredAssignments() {
   }
 }
 
-function getDocumentStyles() {
-  return Array.from(document.styleSheets)
-    .map((sheet) => {
-      try {
-        return Array.from(sheet.cssRules)
-          .map((rule) => rule.cssText)
-          .join("\n");
-      } catch {
-        return "";
-      }
-    })
-    .join("\n");
-}
-
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -99,6 +98,32 @@ function downloadBlob(blob, filename) {
   link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+function getStaffPalette(staff) {
+  const index = team.indexOf(staff);
+
+  return staffPalette[index >= 0 ? index : 0];
+}
+
+function roundRect(context, x, y, width, height, radius) {
+  context.beginPath();
+  context.moveTo(x + radius, y);
+  context.arcTo(x + width, y, x + width, y + height, radius);
+  context.arcTo(x + width, y + height, x, y + height, radius);
+  context.arcTo(x, y + height, x, y, radius);
+  context.arcTo(x, y, x + width, y, radius);
+  context.closePath();
+}
+
+function drawText(context, text, x, y, maxWidth) {
+  let output = text;
+
+  while (context.measureText(output).width > maxWidth && output.length > 3) {
+    output = output.slice(0, -2);
+  }
+
+  context.fillText(output === text ? output : `${output}...`, x, y);
 }
 
 async function loadPersistedAssignments() {
@@ -168,7 +193,6 @@ function EndingOptions({
 }
 
 function App() {
-  const scheduleBoardRef = useRef(null);
   const [assignments, setAssignments] = useState(loadStoredAssignments);
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedSlot, setSelectedSlot] = useState({ day: 0, shift: "soir" });
@@ -297,58 +321,120 @@ function App() {
   }
 
   async function handleExportJpg() {
-    const board = scheduleBoardRef.current;
+    const filename = "terrasse-weekly-schedule.jpg";
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    const width = 1800;
+    const headerHeight = 86;
+    const leftColumnWidth = 190;
+    const cellWidth = (width - leftColumnWidth) / days.length;
+    const rowPadding = 16;
+    const cardHeight = 54;
+    const rowHeights = shiftSections.map((shift) => {
+      const maxAssignments = Math.max(
+        1,
+        ...days.map((day) => getAssignments(day.key, shift.id).length)
+      );
 
-    if (!board) {
+      return Math.max(150, 74 + maxAssignments * (cardHeight + 10));
+    });
+    const height = headerHeight + rowHeights.reduce((total, item) => total + item, 0);
+
+    canvas.width = width;
+    canvas.height = height;
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, width, height);
+
+    context.fillStyle = "#f8f9fb";
+    context.fillRect(0, 0, width, headerHeight);
+    context.strokeStyle = "#dfe3de";
+    context.lineWidth = 2;
+    context.strokeRect(0, 0, width, height);
+    context.fillStyle = "#1f2933";
+    context.font = "700 30px Arial";
+    context.fillText("Weekly staffing schedule", 24, 42);
+    context.font = "700 18px Arial";
+    context.fillStyle = "#667085";
+    context.fillText("Monday - Sunday", 24, 68);
+
+    days.forEach((day, index) => {
+      const x = leftColumnWidth + index * cellWidth;
+
+      context.fillStyle = "#2f3541";
+      context.font = "800 22px Arial";
+      context.fillText(day.label, x + 16, 55);
+      context.strokeStyle = "#e7e9ee";
+      context.beginPath();
+      context.moveTo(x, 0);
+      context.lineTo(x, height);
+      context.stroke();
+    });
+
+    let rowTop = headerHeight;
+
+    shiftSections.forEach((shift, shiftIndex) => {
+      const rowHeight = rowHeights[shiftIndex];
+
+      context.fillStyle = "#fbfbfc";
+      context.fillRect(0, rowTop, leftColumnWidth, rowHeight);
+      context.strokeStyle = "#e7e9ee";
+      context.strokeRect(0, rowTop, width, rowHeight);
+      context.fillStyle = "#1f2933";
+      context.font = "800 22px Arial";
+      context.fillText(shift.name, 18, rowTop + 36);
+
+      days.forEach((day, dayIndex) => {
+        const cellLeft = leftColumnWidth + dayIndex * cellWidth;
+        const cellAssignments = getAssignments(day.key, shift.id);
+
+        cellAssignments.forEach((assignment, assignmentIndex) => {
+          const palette = getStaffPalette(assignment.staff);
+          const cardX = cellLeft + rowPadding;
+          const cardY = rowTop + rowPadding + assignmentIndex * (cardHeight + 10);
+          const cardW = cellWidth - rowPadding * 2;
+
+          context.fillStyle = palette.background;
+          roundRect(context, cardX, cardY, cardW, cardHeight, 10);
+          context.fill();
+          context.fillStyle = palette.border;
+          roundRect(context, cardX, cardY, 6, cardHeight, 3);
+          context.fill();
+          context.fillStyle = palette.text;
+          context.font = "800 17px Arial";
+          drawText(context, assignment.staff, cardX + 14, cardY + 23, cardW - 24);
+          context.font = "600 14px Arial";
+          drawText(
+            context,
+            `${assignment.start} - ${assignment.end}`,
+            cardX + 14,
+            cardY + 43,
+            cardW - 24
+          );
+        });
+      });
+
+      rowTop += rowHeight;
+    });
+
+    const blob = await new Promise((resolve) => {
+      canvas.toBlob(resolve, "image/jpeg", 0.95);
+    });
+
+    if (!blob) {
       return;
     }
 
-    const scale = 2;
-    const width = Math.ceil(board.scrollWidth);
-    const height = Math.ceil(board.scrollHeight);
-    const clonedBoard = board.cloneNode(true);
+    const file = new File([blob], filename, { type: "image/jpeg" });
 
-    clonedBoard.style.width = `${width}px`;
-    clonedBoard.style.background = "#ffffff";
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({
+        title: "Terrasse weekly schedule",
+        files: [file]
+      });
+      return;
+    }
 
-    const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-        <foreignObject width="100%" height="100%">
-          <div xmlns="http://www.w3.org/1999/xhtml">
-            <style>${getDocumentStyles()}</style>
-            ${clonedBoard.outerHTML}
-          </div>
-        </foreignObject>
-      </svg>
-    `;
-    const svgBlob = new Blob([svg], {
-      type: "image/svg+xml;charset=utf-8"
-    });
-    const imageUrl = URL.createObjectURL(svgBlob);
-    const image = new Image();
-
-    image.src = imageUrl;
-    await image.decode();
-
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d");
-
-    canvas.width = width * scale;
-    canvas.height = height * scale;
-    context.fillStyle = "#ffffff";
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    URL.revokeObjectURL(imageUrl);
-
-    canvas.toBlob(
-      (blob) => {
-        if (blob) {
-          downloadBlob(blob, "terrasse-weekly-schedule.jpg");
-        }
-      },
-      "image/jpeg",
-      0.95
-    );
+    downloadBlob(blob, filename);
   }
 
   function changeWeek(direction) {
@@ -595,7 +681,7 @@ function App() {
               </button>
               <button className="primary-button" onClick={handleExportJpg}>
                 <Download size={17} />
-                JPG
+                JPG / Share
               </button>
             </div>
           </div>
@@ -603,9 +689,8 @@ function App() {
 
         <div className="content-grid">
           <section
-            className="schedule-board"
+            className="schedule-board desktop-schedule-board"
             aria-label="Weekly schedule"
-            ref={scheduleBoardRef}
           >
             <div className="board-header">
               <span>Shift</span>
@@ -676,6 +761,65 @@ function App() {
                   </div>
                 ))}
               </div>
+            ))}
+          </section>
+
+          <section className="mobile-schedule-board" aria-label="Weekly schedule">
+            {days.map((day) => (
+              <article className="mobile-day-card" key={day.key}>
+                <h2>{day.label}</h2>
+                {shiftSections.map((shift) => (
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    className={
+                      selectedSlot.day === day.key && selectedSlot.shift === shift.id
+                        ? "mobile-shift-block selected"
+                        : "mobile-shift-block"
+                    }
+                    key={`${day.key}-${shift.id}`}
+                    onClick={() => selectSlot(day.key, shift.id)}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={(event) => handleDrop(event, day.key, shift.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        selectSlot(day.key, shift.id);
+                      }
+                    }}
+                  >
+                    <span className="mobile-shift-title">{shift.name}</span>
+                    {getAssignments(day.key, shift.id).map((assignment) => (
+                      <span
+                        className={`event-pill ${getStaffColorClass(assignment.staff)} ${
+                          editingAssignmentId === assignment.id ? "editing-event" : ""
+                        }`}
+                        draggable
+                        key={assignment.id}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          startEditAssignment(assignment);
+                        }}
+                        onDragStart={(event) => {
+                          event.dataTransfer.effectAllowed = "copyMove";
+                          event.dataTransfer.setData(
+                            "text/plain",
+                            String(assignment.id)
+                          );
+                        }}
+                      >
+                        <strong>{assignment.staff}</strong>
+                        <small>
+                          {assignment.start} - {assignment.end}
+                        </small>
+                      </span>
+                    ))}
+                    <span className="cell-add">
+                      <Plus size={14} />
+                      Staff
+                    </span>
+                  </div>
+                ))}
+              </article>
             ))}
           </section>
 

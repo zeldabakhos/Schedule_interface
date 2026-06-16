@@ -252,6 +252,14 @@ input[type="time"] {
   cursor: grabbing;
 }
 
+.event-pill:hover {
+  filter: saturate(1.08);
+}
+
+.event-pill.editing-event {
+  box-shadow: 0 0 0 2px #3f7fcb;
+}
+
 .event-pill strong {
   font-size: 0.86rem;
 }
@@ -376,11 +384,22 @@ input[type="time"] {
   border-radius: 8px;
 }
 
-.assignment-list strong {
+.assignment-list li.editing-assignment {
+  border-color: #3f7fcb;
+  background: #f5f9ff;
+}
+
+.assignment-edit-button {
   display: flex;
   align-items: baseline;
   gap: 8px;
+  border: 0;
+  color: #20312d;
+  background: transparent;
   font-size: 0.92rem;
+  font-weight: 800;
+  padding: 0;
+  text-align: left;
 }
 
 .assignment-list small {
@@ -398,6 +417,14 @@ input[type="time"] {
 .assignment-form {
   display: grid;
   gap: 12px;
+}
+
+.edit-mode-label {
+  margin: 0;
+  color: #3f7fcb;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 .form-error {

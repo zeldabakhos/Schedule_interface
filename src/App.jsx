@@ -25,7 +25,7 @@ const team = ["Julien", "Mehssen", "Mostafa", "Mario", "Ali Saade", "Rassil", "R
 
 const initialAssignments = [];
 const timePattern = /^\d{2}:\d{2}$/;
-const nightShiftStart = "18:00";
+const morningShiftLatestStart = "18:00";
 const endingOptionsByShift = {
   morning: [
     { value: "fin de service", label: "Fin de service" }
@@ -41,7 +41,7 @@ function isAtOrAfter(time, threshold) {
 }
 
 function getShiftRuleError(shift, start) {
-  if (shift === "morning" && isAtOrAfter(start, nightShiftStart)) {
+  if (shift === "morning" && isAtOrAfter(start, morningShiftLatestStart)) {
     return "Morning shift starts must be before 18:00.";
   }
 
@@ -112,6 +112,7 @@ function App() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedSlot, setSelectedSlot] = useState({ day: 0, shift: "night" });
   const [pendingDrop, setPendingDrop] = useState(null);
+  const [editingAssignmentId, setEditingAssignmentId] = useState(null);
   const [formError, setFormError] = useState("");
   const [draft, setDraft] = useState({
     staff: team[0],
@@ -140,6 +141,7 @@ function App() {
       assignment.day === selectedSlot.day &&
       assignment.shift === selectedSlot.shift
   );
+  const isEditing = editingAssignmentId !== null;
 
   function getAssignments(day, shift) {
     return assignments.filter(
@@ -158,9 +160,33 @@ function App() {
   function changeWeek(direction) {
     setWeekOffset((current) => current + direction);
     setSelectedSlot((current) => ({ ...current, day: 0 }));
+    cancelEdit();
   }
 
-  function handleAddAssignment(event) {
+  function startEditAssignment(assignment) {
+    setSelectedSlot({ day: assignment.day, shift: assignment.shift });
+    setEditingAssignmentId(assignment.id);
+    setFormError("");
+    setDraft({
+      staff: assignment.staff,
+      start: assignment.start,
+      end: timePattern.test(assignment.end) ? "custom" : assignment.end,
+      endTime: timePattern.test(assignment.end) ? assignment.end : "15:00"
+    });
+  }
+
+  function cancelEdit() {
+    setEditingAssignmentId(null);
+    setFormError("");
+    setDraft({
+      staff: team[0],
+      start: selectedSlot.shift === "morning" ? "10:00" : "18:00",
+      end: selectedSlot.shift === "morning" ? "fin de service" : "fermeture",
+      endTime: "15:00"
+    });
+  }
+
+  function handleSubmitAssignment(event) {
     event.preventDefault();
     const error = getShiftRuleError(selectedSlot.shift, draft.start);
 
@@ -171,18 +197,34 @@ function App() {
 
     const endMode = getValidEndMode(selectedSlot.shift, draft.end);
     const end = endMode === "custom" ? draft.endTime : endMode;
+    const assignmentPayload = {
+      week: weekOffset,
+      day: selectedSlot.day,
+      shift: selectedSlot.shift,
+      staff: draft.staff,
+      start: draft.start,
+      end
+    };
 
     setFormError("");
+
+    if (isEditing) {
+      setAssignments((current) =>
+        current.map((assignment) =>
+          assignment.id === editingAssignmentId
+            ? { ...assignment, ...assignmentPayload }
+            : assignment
+        )
+      );
+      setEditingAssignmentId(null);
+      return;
+    }
+
     setAssignments((current) => [
       ...current,
       {
         id: Date.now(),
-        week: weekOffset,
-        day: selectedSlot.day,
-        shift: selectedSlot.shift,
-        staff: draft.staff,
-        start: draft.start,
-        end
+        ...assignmentPayload
       }
     ]);
   }
@@ -191,6 +233,9 @@ function App() {
     setAssignments((current) =>
       current.filter((assignment) => assignment.id !== id)
     );
+    if (editingAssignmentId === id) {
+      cancelEdit();
+    }
   }
 
   function handleDrop(event, day, shift) {
@@ -297,13 +342,9 @@ function App() {
             >
               <ChevronRight size={18} />
             </button>
-            <button className="secondary-button" onClick={handleExport}>
+            <button className="primary-button" onClick={handleExport}>
               <Download size={17} />
               Export PDF
-            </button>
-            <button className="primary-button">
-              <Save size={17} />
-              Publish
             </button>
           </div>
         </header>
@@ -349,9 +390,15 @@ function App() {
                   >
                     {getAssignments(day.key, shift.id).map((assignment) => (
                       <span
-                        className={`event-pill ${getStaffColorClass(assignment.staff)}`}
+                        className={`event-pill ${getStaffColorClass(assignment.staff)} ${
+                          editingAssignmentId === assignment.id ? "editing-event" : ""
+                        }`}
                         draggable
                         key={assignment.id}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          startEditAssignment(assignment);
+                        }}
                         onDragStart={(event) => {
                           event.dataTransfer.effectAllowed = "copyMove";
                           event.dataTransfer.setData(
@@ -384,7 +431,8 @@ function App() {
               </div>
             </div>
 
-            <form className="assignment-form" onSubmit={handleAddAssignment}>
+            <form className="assignment-form" onSubmit={handleSubmitAssignment}>
+              {isEditing && <p className="edit-mode-label">Editing shift</p>}
               <label>
                 Staff member
                 <select
@@ -423,21 +471,40 @@ function App() {
                 }
               />
               <button className="primary-button" type="submit">
-                <Plus size={17} />
-                Add staff
+                {isEditing ? <Save size={17} /> : <Plus size={17} />}
+                {isEditing ? "Save changes" : "Add staff"}
               </button>
+              {isEditing && (
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={cancelEdit}
+                >
+                  Cancel edit
+                </button>
+              )}
               {formError && <p className="form-error">{formError}</p>}
             </form>
 
             <ul className="assignment-list">
               {selectedAssignments.map((assignment) => (
-                <li key={assignment.id}>
-                  <strong>
+                <li
+                  className={
+                    editingAssignmentId === assignment.id
+                      ? "editing-assignment"
+                      : ""
+                  }
+                  key={assignment.id}
+                >
+                  <button
+                    className="assignment-edit-button"
+                    onClick={() => startEditAssignment(assignment)}
+                  >
                     {assignment.staff}
                     <small>
                       {assignment.start} - {assignment.end}
                     </small>
-                  </strong>
+                  </button>
                   <button onClick={() => handleRemoveAssignment(assignment.id)}>
                     Remove
                   </button>

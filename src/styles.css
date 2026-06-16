@@ -34,6 +34,7 @@ button {
 
 .primary-button,
 .secondary-button,
+.danger-button,
 .icon-button,
 .week-button {
   display: inline-flex;
@@ -125,6 +126,14 @@ h2 {
   color: #ffffff;
   background: #226a5d;
   border-color: #226a5d;
+  font-weight: 700;
+}
+
+.danger-button {
+  padding: 0 14px;
+  color: #ffffff;
+  background: #a33a2b;
+  border-color: #a33a2b;
   font-weight: 700;
 }
 
@@ -586,7 +595,7 @@ fieldset label {
   .export-actions {
     grid-column: 1 / -1;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 8px;
     width: 100%;
   }
@@ -707,7 +716,8 @@ fieldset label {
   }
 
   .primary-button,
-  .secondary-button {
+  .secondary-button,
+  .danger-button {
     width: 100%;
     min-height: 44px;
   }

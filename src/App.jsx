@@ -198,6 +198,7 @@ function App() {
   const [selectedSlot, setSelectedSlot] = useState({ day: 0, shift: "soir" });
   const [repeatDays, setRepeatDays] = useState([0]);
   const [isMobileEditorOpen, setIsMobileEditorOpen] = useState(false);
+  const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
   const [pendingDrop, setPendingDrop] = useState(null);
   const [editingAssignmentId, setEditingAssignmentId] = useState(null);
   const [formError, setFormError] = useState("");
@@ -572,6 +573,15 @@ function App() {
     }
   }
 
+  function clearSchedule() {
+    setAssignments([]);
+    setEditingAssignmentId(null);
+    setPendingDrop(null);
+    setIsMobileEditorOpen(false);
+    setIsClearConfirmOpen(false);
+    cancelEdit();
+  }
+
   function handleDrop(event, day, shift) {
     event.preventDefault();
     const assignmentId = Number(event.dataTransfer.getData("text/plain"));
@@ -806,6 +816,12 @@ function App() {
               <ChevronRight size={18} />
             </button>
             <div className="export-actions">
+              <button
+                className="danger-button"
+                onClick={() => setIsClearConfirmOpen(true)}
+              >
+                Clear
+              </button>
               <button className="secondary-button" onClick={handleExportPdf}>
                 <Download size={17} />
                 PDF
@@ -963,6 +979,31 @@ function App() {
         <div className="mobile-editor-backdrop">
           <section className="mobile-editor-sheet">
             {renderAssignmentEditor()}
+          </section>
+        </div>
+      )}
+      {isClearConfirmOpen && (
+        <div className="drop-dialog-backdrop">
+          <section className="drop-dialog" aria-label="Clear schedule confirmation">
+            <h2>Clear schedule?</h2>
+            <p>
+              This will remove every saved slot from the schedule. This action
+              cannot be undone.
+            </p>
+            <div className="drop-dialog-actions">
+              <button
+                className="danger-button"
+                onClick={clearSchedule}
+              >
+                Yes, clear everything
+              </button>
+              <button
+                className="secondary-button"
+                onClick={() => setIsClearConfirmOpen(false)}
+              >
+                Cancel
+              </button>
+            </div>
           </section>
         </div>
       )}

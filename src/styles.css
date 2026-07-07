@@ -361,6 +361,12 @@ input[type="time"] {
   border-color: #ef9bc2;
 }
 
+.event-pill.staff-color-11 {
+  color: #194061;
+  background: #e0f2fe;
+  border-color: #3b82b6;
+}
+
 .cell-add {
   display: inline-flex;
   align-items: center;

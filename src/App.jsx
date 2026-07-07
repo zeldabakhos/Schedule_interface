@@ -32,7 +32,8 @@ const staffPalette = [
   { text: "#0d4b67", background: "#d9f5ff", border: "#35a6c8" },
   { text: "#4f255f", background: "#ead9f4", border: "#8f55a8" },
   { text: "#2f4a25", background: "#dfefd9", border: "#6a9f5b" },
-  { text: "#7b3155", background: "#ffe4f0", border: "#ef9bc2" }
+  { text: "#7b3155", background: "#ffe4f0", border: "#ef9bc2" },
+  { text: "#194061", background: "#e0f2fe", border: "#3b82b6" }
 ];
 
 const initialAssignments = [];
@@ -75,9 +76,14 @@ function getValidEndMode(shift, endMode) {
   return options[0].value;
 }
 
-function getStaffColorClass(staff) {
+function getStaffPaletteIndex(staff) {
   const index = team.indexOf(staff);
-  return `staff-color-${index >= 0 ? index : 0}`;
+
+  return index >= 0 ? index % staffPalette.length : 0;
+}
+
+function getStaffColorClass(staff) {
+  return `staff-color-${getStaffPaletteIndex(staff)}`;
 }
 
 function loadStoredAssignments() {
@@ -101,9 +107,7 @@ function downloadBlob(blob, filename) {
 }
 
 function getStaffPalette(staff) {
-  const index = team.indexOf(staff);
-
-  return staffPalette[index >= 0 ? index : 0];
+  return staffPalette[getStaffPaletteIndex(staff)];
 }
 
 function roundRect(context, x, y, width, height, radius) {

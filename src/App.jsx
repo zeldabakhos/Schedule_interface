@@ -1,9 +1,15 @@
 import {
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
   Download,
+  LogOut,
   Plus,
   Save,
+  Search,
+  Trash2,
+  UserRound,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -196,7 +202,7 @@ function EndingOptions({
   );
 }
 
-function App() {
+function ScheduleApp({ canEdit = true }) {
   const [assignments, setAssignments] = useState(loadStoredAssignments);
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedSlot, setSelectedSlot] = useState({ day: 0, shift: "soir" });
@@ -208,6 +214,7 @@ function App() {
   const [formError, setFormError] = useState("");
   const [hasLoadedDiskStorage, setHasLoadedDiskStorage] = useState(false);
   const [storageStatus, setStorageStatus] = useState("Loading saved schedule...");
+  const [selectedStaffFilters, setSelectedStaffFilters] = useState([]);
   const [draft, setDraft] = useState({
     staff: team[0],
     start: "18:00",
@@ -222,7 +229,8 @@ function App() {
     (assignment) =>
       assignment.week === weekOffset &&
       assignment.day === selectedSlot.day &&
-      assignment.shift === selectedSlot.shift
+      assignment.shift === selectedSlot.shift &&
+      matchesStaffFilter(assignment)
   );
   const isEditing = editingAssignmentId !== null;
 
@@ -265,7 +273,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!hasLoadedDiskStorage) {
+    if (!hasLoadedDiskStorage || !canEdit) {
       return;
     }
 
@@ -277,15 +285,33 @@ function App() {
     savePersistedAssignments(assignments)
       .then(() => setStorageStatus("Saved to data/schedule.json"))
       .catch(() => setStorageStatus("Using browser backup only"));
-  }, [assignments, hasLoadedDiskStorage]);
+  }, [assignments, canEdit, hasLoadedDiskStorage]);
 
   function getAssignments(day, shift) {
     return assignments.filter(
       (assignment) =>
         assignment.week === weekOffset &&
         assignment.day === day &&
-        assignment.shift === shift
+        assignment.shift === shift &&
+        matchesStaffFilter(assignment)
     );
+  }
+
+  function matchesStaffFilter(assignment) {
+    return (
+      selectedStaffFilters.length === 0 ||
+      selectedStaffFilters.includes(assignment.staff)
+    );
+  }
+
+  function toggleStaffFilter(staff) {
+    setSelectedStaffFilters((current) => {
+      if (current.includes(staff)) {
+        return current.filter((item) => item !== staff);
+      }
+
+      return [...current, staff];
+    });
   }
 
   function hasStaffConflict({ week, day, shift, staff, ignoredId = null }) {
@@ -322,11 +348,19 @@ function App() {
   }
 
   function handleExportPdf() {
+    if (!canEdit) {
+      return;
+    }
+
     document.title = "Terrasse weekly schedule";
     window.print();
   }
 
   async function handleExportJpg() {
+    if (!canEdit) {
+      return;
+    }
+
     const filename = "terrasse-weekly-schedule.jpg";
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
@@ -457,12 +491,16 @@ function App() {
       setRepeatDays([day]);
     }
 
-    if (shouldOpenEditor) {
+    if (shouldOpenEditor && canEdit) {
       setIsMobileEditorOpen(true);
     }
   }
 
   function startEditAssignment(assignment, shouldOpenEditor = false) {
+    if (!canEdit) {
+      return;
+    }
+
     setSelectedSlot({ day: assignment.day, shift: assignment.shift });
     setRepeatDays([assignment.day]);
     setEditingAssignmentId(assignment.id);
@@ -497,6 +535,10 @@ function App() {
 
   function handleSubmitAssignment(event) {
     event.preventDefault();
+    if (!canEdit) {
+      return;
+    }
+
     const error = getShiftRuleError(selectedSlot.shift, draft.start);
 
     if (error) {
@@ -569,6 +611,10 @@ function App() {
   }
 
   function handleRemoveAssignment(id) {
+    if (!canEdit) {
+      return;
+    }
+
     setAssignments((current) =>
       current.filter((assignment) => assignment.id !== id)
     );
@@ -578,6 +624,10 @@ function App() {
   }
 
   function clearSchedule() {
+    if (!canEdit) {
+      return;
+    }
+
     setAssignments([]);
     setEditingAssignmentId(null);
     setPendingDrop(null);
@@ -588,6 +638,10 @@ function App() {
 
   function handleDrop(event, day, shift) {
     event.preventDefault();
+    if (!canEdit) {
+      return;
+    }
+
     const assignmentId = Number(event.dataTransfer.getData("text/plain"));
     const assignment = assignments.find((item) => item.id === assignmentId);
 
@@ -609,6 +663,10 @@ function App() {
   }
 
   function completeDrop(action) {
+    if (!canEdit) {
+      return;
+    }
+
     if (!pendingDrop) {
       return;
     }
@@ -695,75 +753,77 @@ function App() {
           </button>
         </div>
 
-        <form className="assignment-form" onSubmit={handleSubmitAssignment}>
-          {isEditing && <p className="edit-mode-label">Editing shift</p>}
-          <label>
-            Staff member
-            <select
-              value={draft.staff}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, staff: event.target.value }))
+        {canEdit && (
+          <form className="assignment-form" onSubmit={handleSubmitAssignment}>
+            {isEditing && <p className="edit-mode-label">Editing shift</p>}
+            <label>
+              Staff member
+              <select
+                value={draft.staff}
+                onChange={(event) =>
+                  setDraft((current) => ({ ...current, staff: event.target.value }))
+                }
+              >
+                {team.map((member) => (
+                  <option key={member} value={member}>
+                    {member}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Starting hour
+              <input
+                type="time"
+                value={draft.start}
+                onChange={(event) =>
+                  setDraft((current) => ({ ...current, start: event.target.value }))
+                }
+              />
+            </label>
+            <EndingOptions
+              name="end"
+              shift={selectedSlot.shift}
+              endMode={getValidEndMode(selectedSlot.shift, draft.end)}
+              endTime={draft.endTime}
+              onEndModeChange={(value) =>
+                setDraft((current) => ({ ...current, end: value }))
               }
-            >
-              {team.map((member) => (
-                <option key={member} value={member}>
-                  {member}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Starting hour
-            <input
-              type="time"
-              value={draft.start}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, start: event.target.value }))
+              onEndTimeChange={(value) =>
+                setDraft((current) => ({ ...current, endTime: value }))
               }
             />
-          </label>
-          <EndingOptions
-            name="end"
-            shift={selectedSlot.shift}
-            endMode={getValidEndMode(selectedSlot.shift, draft.end)}
-            endTime={draft.endTime}
-            onEndModeChange={(value) =>
-              setDraft((current) => ({ ...current, end: value }))
-            }
-            onEndTimeChange={(value) =>
-              setDraft((current) => ({ ...current, endTime: value }))
-            }
-          />
-          {!isEditing && (
-            <fieldset className="repeat-days">
-              <legend>Repeat on</legend>
-              {days.map((day) => (
-                <label key={day.key}>
-                  <input
-                    type="checkbox"
-                    checked={repeatDays.includes(day.key)}
-                    onChange={() => toggleRepeatDay(day.key)}
-                  />
-                  {day.label}
-                </label>
-              ))}
-            </fieldset>
-          )}
-          <button className="primary-button" type="submit">
-            {isEditing ? <Save size={17} /> : <Plus size={17} />}
-            {isEditing ? "Save changes" : "Add staff"}
-          </button>
-          {isEditing && (
-            <button
-              className="secondary-button"
-              type="button"
-              onClick={cancelEdit}
-            >
-              Cancel edit
+            {!isEditing && (
+              <fieldset className="repeat-days">
+                <legend>Repeat on</legend>
+                {days.map((day) => (
+                  <label key={day.key}>
+                    <input
+                      type="checkbox"
+                      checked={repeatDays.includes(day.key)}
+                      onChange={() => toggleRepeatDay(day.key)}
+                    />
+                    {day.label}
+                  </label>
+                ))}
+              </fieldset>
+            )}
+            <button className="primary-button" type="submit">
+              {isEditing ? <Save size={17} /> : <Plus size={17} />}
+              {isEditing ? "Save changes" : "Add staff"}
             </button>
-          )}
-          {formError && <p className="form-error">{formError}</p>}
-        </form>
+            {isEditing && (
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={cancelEdit}
+              >
+                Cancel edit
+              </button>
+            )}
+            {formError && <p className="form-error">{formError}</p>}
+          </form>
+        )}
 
         <ul className="assignment-list">
           {selectedAssignments.map((assignment) => (
@@ -777,6 +837,7 @@ function App() {
             >
               <button
                 className="assignment-edit-button"
+                disabled={!canEdit}
                 onClick={() => startEditAssignment(assignment)}
               >
                 {assignment.staff}
@@ -784,9 +845,11 @@ function App() {
                   {assignment.start} - {assignment.end}
                 </small>
               </button>
-              <button onClick={() => handleRemoveAssignment(assignment.id)}>
-                Remove
-              </button>
+              {canEdit && (
+                <button onClick={() => handleRemoveAssignment(assignment.id)}>
+                  Remove
+                </button>
+              )}
             </li>
           ))}
         </ul>
@@ -819,24 +882,57 @@ function App() {
             >
               <ChevronRight size={18} />
             </button>
-            <div className="export-actions">
-              <button
-                className="danger-button"
-                onClick={() => setIsClearConfirmOpen(true)}
-              >
-                Clear
-              </button>
-              <button className="secondary-button" onClick={handleExportPdf}>
-                <Download size={17} />
-                PDF
-              </button>
-              <button className="primary-button" onClick={handleExportJpg}>
-                <Download size={17} />
-                JPG / Share
-              </button>
-            </div>
+            {canEdit && (
+              <div className="export-actions">
+                <button
+                  className="danger-button"
+                  onClick={() => setIsClearConfirmOpen(true)}
+                >
+                  Clear
+                </button>
+                <button className="secondary-button" onClick={handleExportPdf}>
+                  <Download size={17} />
+                  PDF
+                </button>
+                <button className="primary-button" onClick={handleExportJpg}>
+                  <Download size={17} />
+                  JPG / Share
+                </button>
+              </div>
+            )}
           </div>
         </header>
+
+        <section className="controls-row employee-filter-panel" aria-label="Employee filters">
+          <div>
+            <p className="eyebrow">Filter schedule</p>
+            <h2>
+              {selectedStaffFilters.length === 0
+                ? "Full team"
+                : `${selectedStaffFilters.length} selected`}
+            </h2>
+          </div>
+          <div className="employee-filter-list">
+            {team.map((member) => (
+              <label className="employee-filter-chip" key={member}>
+                <input
+                  type="checkbox"
+                  checked={selectedStaffFilters.includes(member)}
+                  onChange={() => toggleStaffFilter(member)}
+                />
+                {member}
+              </label>
+            ))}
+          </div>
+          <button
+            className="secondary-button"
+            disabled={selectedStaffFilters.length === 0}
+            onClick={() => setSelectedStaffFilters([])}
+            type="button"
+          >
+            Reset filters
+          </button>
+        </section>
 
         <div className="content-grid">
           <section
@@ -869,8 +965,12 @@ function App() {
                     }
                     key={`${shift.id}-${day.key}`}
                     onClick={() => selectSlot(day.key, shift.id)}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={(event) => handleDrop(event, day.key, shift.id)}
+                    onDragOver={canEdit ? (event) => event.preventDefault() : undefined}
+                    onDrop={
+                      canEdit
+                        ? (event) => handleDrop(event, day.key, shift.id)
+                        : undefined
+                    }
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === " ") {
                         selectSlot(day.key, shift.id);
@@ -885,11 +985,13 @@ function App() {
                         className={`event-pill ${getStaffColorClass(assignment.staff)} ${
                           editingAssignmentId === assignment.id ? "editing-event" : ""
                         }`}
-                        draggable
+                        draggable={canEdit}
                         key={assignment.id}
                         onClick={(event) => {
                           event.stopPropagation();
-                          startEditAssignment(assignment);
+                          if (canEdit) {
+                            startEditAssignment(assignment);
+                          }
                         }}
                         onDragStart={(event) => {
                           event.dataTransfer.effectAllowed = "copyMove";
@@ -905,10 +1007,12 @@ function App() {
                         </small>
                       </span>
                     ))}
-                    <span className="cell-add">
-                      <Plus size={14} />
-                      Staff
-                    </span>
+                    {canEdit && (
+                      <span className="cell-add">
+                        <Plus size={14} />
+                        Staff
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -929,12 +1033,16 @@ function App() {
                         : "mobile-shift-block"
                     }
                     key={`${day.key}-${shift.id}`}
-                    onClick={() => selectSlot(day.key, shift.id, true)}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={(event) => handleDrop(event, day.key, shift.id)}
+                    onClick={() => selectSlot(day.key, shift.id, canEdit)}
+                    onDragOver={canEdit ? (event) => event.preventDefault() : undefined}
+                    onDrop={
+                      canEdit
+                        ? (event) => handleDrop(event, day.key, shift.id)
+                        : undefined
+                    }
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === " ") {
-                        selectSlot(day.key, shift.id, true);
+                          selectSlot(day.key, shift.id, canEdit);
                       }
                     }}
                   >
@@ -944,11 +1052,13 @@ function App() {
                         className={`event-pill ${getStaffColorClass(assignment.staff)} ${
                           editingAssignmentId === assignment.id ? "editing-event" : ""
                         }`}
-                        draggable
+                        draggable={canEdit}
                         key={assignment.id}
                         onClick={(event) => {
                           event.stopPropagation();
-                          startEditAssignment(assignment, true);
+                          if (canEdit) {
+                            startEditAssignment(assignment, true);
+                          }
                         }}
                         onDragStart={(event) => {
                           event.dataTransfer.effectAllowed = "copyMove";
@@ -964,29 +1074,33 @@ function App() {
                         </small>
                       </span>
                     ))}
-                    <span className="cell-add">
-                      <Plus size={14} />
-                      Staff
-                    </span>
+                    {canEdit && (
+                      <span className="cell-add">
+                        <Plus size={14} />
+                        Staff
+                      </span>
+                    )}
                   </div>
                 ))}
               </article>
             ))}
           </section>
 
-          <aside className="details-panel desktop-details-panel">
-            {renderAssignmentEditor()}
-          </aside>
+          {canEdit && (
+            <aside className="details-panel desktop-details-panel">
+              {renderAssignmentEditor()}
+            </aside>
+          )}
         </div>
       </section>
-      {isMobileEditorOpen && (
+      {canEdit && isMobileEditorOpen && (
         <div className="mobile-editor-backdrop">
           <section className="mobile-editor-sheet">
             {renderAssignmentEditor()}
           </section>
         </div>
       )}
-      {isClearConfirmOpen && (
+      {canEdit && isClearConfirmOpen && (
         <div className="drop-dialog-backdrop">
           <section className="drop-dialog" aria-label="Clear schedule confirmation">
             <h2>Clear schedule?</h2>
@@ -1011,7 +1125,7 @@ function App() {
           </section>
         </div>
       )}
-      {pendingDrop && (
+      {canEdit && pendingDrop && (
         <div className="drop-dialog-backdrop">
           <section className="drop-dialog" aria-label="Drop assignment choice">
             <h2>Move or duplicate?</h2>
@@ -1085,6 +1199,486 @@ function App() {
         </div>
       )}
     </main>
+  );
+}
+
+const reservationStatuses = [
+  ["confirmed", "Confirmed"],
+  ["arrived", "Arrived"],
+  ["seated", "Seated"],
+  ["completed", "Completed"],
+  ["cancelled", "Cancelled"],
+  ["no-show", "No-show"]
+];
+
+const emptyReservation = {
+  customerName: "",
+  date: new Date().toISOString().slice(0, 10),
+  time: "19:30",
+  guests: 2,
+  phone: "",
+  email: "",
+  table: "",
+  notes: "",
+  status: "confirmed"
+};
+
+async function api(path, options = {}) {
+  const response = await fetch(`/api${path}`, {
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {})
+    },
+    ...options
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error || "Request failed");
+  }
+
+  return data;
+}
+
+function addDays(date, count) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + count);
+  return next;
+}
+
+function toDateInput(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function startOfWeek(date) {
+  const current = new Date(`${date}T12:00:00`);
+  const day = current.getDay() || 7;
+  current.setDate(current.getDate() - day + 1);
+  return current;
+}
+
+function Login({ onLogin }) {
+  const [email, setEmail] = useState("boss@terrasse.local");
+  const [password, setPassword] = useState("boss123");
+  const [error, setError] = useState("");
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setError("");
+
+    try {
+      onLogin(await api("/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password })
+      }));
+    } catch (loginError) {
+      setError(loginError.message);
+    }
+  }
+
+  return (
+    <main className="login-page">
+      <form className="login-panel" onSubmit={handleSubmit}>
+        <p className="eyebrow">Terrasse Manager</p>
+        <h1>Sign in</h1>
+        <label>
+          Email
+          <input value={email} onChange={(event) => setEmail(event.target.value)} />
+        </label>
+        <label>
+          Password
+          <input
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+        </label>
+        {error && <p className="form-error">{error}</p>}
+        <button className="primary-button">
+          <UserRound size={17} />
+          Login
+        </button>
+        <p className="auth-hint">Admin: boss@terrasse.local / boss123</p>
+        <p className="auth-hint">Employee: julien@terrasse.local / julien123</p>
+      </form>
+    </main>
+  );
+}
+
+function Reservations({ canEdit = false, session, refresh }) {
+  const [mode, setMode] = useState("day");
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("all");
+  const [editingId, setEditingId] = useState(null);
+  const [draft, setDraft] = useState(emptyReservation);
+  const [error, setError] = useState("");
+  const weekStart = startOfWeek(selectedDate);
+  const dates = mode === "day"
+    ? [selectedDate]
+    : Array.from({ length: 7 }, (_, index) => toDateInput(addDays(weekStart, index)));
+  const filteredReservations = session.reservations.filter((reservation) => {
+    const matchesDate = dates.includes(reservation.date);
+    const matchesName = reservation.customerName.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = status === "all" || reservation.status === status;
+
+    return matchesDate && matchesName && matchesStatus;
+  });
+  const dayReservations = session.reservations.filter(
+    (reservation) => reservation.date === selectedDate
+  );
+  const expectedGuests = dayReservations.reduce(
+    (total, reservation) => total + Number(reservation.guests || 0),
+    0
+  );
+
+  function startReservation(reservation) {
+    setEditingId(reservation.id);
+    setDraft(reservation);
+    setError("");
+  }
+
+  function resetReservation(date = selectedDate) {
+    setEditingId(null);
+    setDraft({ ...emptyReservation, date });
+    setError("");
+  }
+
+  async function saveReservation(event) {
+    event.preventDefault();
+    setError("");
+
+    try {
+      if (editingId) {
+        await api(`/reservations/${editingId}`, {
+          method: "PUT",
+          body: JSON.stringify(draft)
+        });
+      } else {
+        await api("/reservations", {
+          method: "POST",
+          body: JSON.stringify(draft)
+        });
+      }
+
+      await refresh();
+      resetReservation(draft.date);
+    } catch (saveError) {
+      setError(saveError.message);
+    }
+  }
+
+  async function deleteReservation(id) {
+    await api(`/reservations/${id}`, { method: "DELETE" });
+    await refresh();
+    resetReservation();
+  }
+
+  return (
+    <section className="addon-workspace">
+      <div className="controls-row reservations-toolbar">
+        <div className="segmented-control">
+          <button
+            className={mode === "day" ? "primary-button" : "secondary-button"}
+            onClick={() => setMode("day")}
+          >
+            Day
+          </button>
+          <button
+            className={mode === "week" ? "primary-button" : "secondary-button"}
+            onClick={() => setMode("week")}
+          >
+            Week
+          </button>
+        </div>
+        <label>
+          Date
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(event) => setSelectedDate(event.target.value)}
+          />
+        </label>
+        <label>
+          Customer
+          <span className="search-input">
+            <Search size={16} />
+            <input value={search} onChange={(event) => setSearch(event.target.value)} />
+          </span>
+        </label>
+        <label>
+          Status
+          <select value={status} onChange={(event) => setStatus(event.target.value)}>
+            <option value="all">All statuses</option>
+            {reservationStatuses.map(([value, label]) => (
+              <option value={value} key={value}>{label}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="daily-summary">
+        <strong>{dayReservations.length}</strong>
+        <span>reservations</span>
+        <strong>{expectedGuests}</strong>
+        <span>expected guests</span>
+      </div>
+
+      <div className={canEdit ? "reservations-grid" : "reservations-grid readonly-reservations-grid"}>
+        <div className="reservations-calendar">
+          {dates.map((date) => (
+            <section className="reservation-day" key={date}>
+              <header>
+                <h2>{date}</h2>
+                {canEdit && (
+                  <button
+                    className="icon-button"
+                    aria-label="Add reservation"
+                    onClick={() => resetReservation(date)}
+                  >
+                    <Plus size={17} />
+                  </button>
+                )}
+              </header>
+              {filteredReservations
+                .filter((reservation) => reservation.date === date)
+                .map((reservation) => (
+                  <button
+                    className={`reservation-card status-${reservation.status}`}
+                    key={reservation.id}
+                    onClick={() => startReservation(reservation)}
+                  >
+                    <strong>{reservation.time} · {reservation.customerName}</strong>
+                    <span>{reservation.guests} guests · {reservation.phone}</span>
+                    <small>
+                      {reservationStatuses.find(([value]) => value === reservation.status)?.[1]}
+                      {reservation.table ? ` · Table ${reservation.table}` : ""}
+                    </small>
+                  </button>
+                ))}
+            </section>
+          ))}
+        </div>
+
+        {canEdit && (
+        <aside className="details-panel reservation-editor">
+          <div>
+            <p className="eyebrow">
+              {editingId ? "Edit reservation" : "New reservation"}
+            </p>
+            <h2>{draft.customerName || "Reservation details"}</h2>
+          </div>
+            <form className="assignment-form" onSubmit={saveReservation}>
+              <label>
+                Customer name
+                <input
+                  value={draft.customerName}
+                  onChange={(event) =>
+                    setDraft((current) => ({ ...current, customerName: event.target.value }))
+                  }
+                />
+              </label>
+              <div className="addon-form-grid">
+                <label>
+                  Date
+                  <input
+                    type="date"
+                    value={draft.date}
+                    onChange={(event) =>
+                      setDraft((current) => ({ ...current, date: event.target.value }))
+                    }
+                  />
+                </label>
+                <label>
+                  Time
+                  <input
+                    type="time"
+                    value={draft.time}
+                    onChange={(event) =>
+                      setDraft((current) => ({ ...current, time: event.target.value }))
+                    }
+                  />
+                </label>
+              </div>
+              <div className="addon-form-grid">
+                <label>
+                  Guests
+                  <input
+                    min="1"
+                    type="number"
+                    value={draft.guests}
+                    onChange={(event) =>
+                      setDraft((current) => ({ ...current, guests: Number(event.target.value) }))
+                    }
+                  />
+                </label>
+                <label>
+                  Status
+                  <select
+                    value={draft.status}
+                    onChange={(event) =>
+                      setDraft((current) => ({ ...current, status: event.target.value }))
+                    }
+                  >
+                    {reservationStatuses.map(([value, label]) => (
+                      <option value={value} key={value}>{label}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <label>
+                Phone
+                <input
+                  value={draft.phone}
+                  onChange={(event) =>
+                    setDraft((current) => ({ ...current, phone: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Email
+                <input
+                  value={draft.email}
+                  onChange={(event) =>
+                    setDraft((current) => ({ ...current, email: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Table
+                <input
+                  value={draft.table}
+                  onChange={(event) =>
+                    setDraft((current) => ({ ...current, table: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Notes
+                <input
+                  value={draft.notes}
+                  onChange={(event) =>
+                    setDraft((current) => ({ ...current, notes: event.target.value }))
+                  }
+                />
+              </label>
+              {error && <p className="form-error">{error}</p>}
+              <div className="drop-dialog-actions">
+                <button className="primary-button">
+                  <Save size={17} />
+                  Save
+                </button>
+                {editingId && (
+                  <button
+                    className="danger-button"
+                    type="button"
+                    onClick={() => deleteReservation(editingId)}
+                  >
+                    <Trash2 size={17} />
+                    Delete
+                  </button>
+                )}
+              </div>
+            </form>
+        </aside>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function Profile({ session }) {
+  return (
+    <section className="addon-workspace staff-profile">
+      <article className="profile-card">
+        <UserRound size={22} />
+        <div>
+          <p className="eyebrow">{session.user.roleLabel}</p>
+          <h2>{session.user.name}</h2>
+          <span>{session.user.email}</span>
+        </div>
+      </article>
+    </section>
+  );
+}
+
+function App() {
+  const [session, setSession] = useState(null);
+  const [view, setView] = useState("schedule");
+  const [isLoadingSession, setIsLoadingSession] = useState(true);
+
+  useEffect(() => {
+    api("/me")
+      .then(setSession)
+      .catch(() => setSession(null))
+      .finally(() => setIsLoadingSession(false));
+  }, []);
+
+  async function refresh() {
+    setSession(await api("/me"));
+  }
+
+  async function logout() {
+    try {
+      await api("/logout", { method: "POST" });
+    } finally {
+      setSession(null);
+      setView("schedule");
+    }
+  }
+
+  if (isLoadingSession) {
+    return <main className="login-page">Loading...</main>;
+  }
+
+  if (!session) {
+    return <Login onLogin={setSession} />;
+  }
+
+  const isAdmin = session.user.role === "admin";
+
+  return (
+    <>
+      <header className="addon-nav">
+        <div>
+          <p className="eyebrow">{session.restaurant?.name || "Terrasse"}</p>
+          <strong>{session.user.name}</strong>
+        </div>
+        <nav>
+          <button
+            className={view === "schedule" ? "primary-button" : "secondary-button"}
+            onClick={() => setView("schedule")}
+          >
+            <CalendarDays size={17} />
+            Schedule
+          </button>
+          <button
+            className={view === "reservations" ? "primary-button" : "secondary-button"}
+            onClick={() => setView("reservations")}
+          >
+            <ClipboardList size={17} />
+            Reservations
+          </button>
+          <button
+            className={view === "profile" ? "primary-button" : "secondary-button"}
+            onClick={() => setView("profile")}
+          >
+            <UserRound size={17} />
+            Profile
+          </button>
+          <button className="secondary-button" onClick={logout}>
+            <LogOut size={17} />
+            Logout
+          </button>
+        </nav>
+      </header>
+      {view === "schedule" && <ScheduleApp canEdit={isAdmin} />}
+      {view === "reservations" && (
+        <Reservations canEdit={isAdmin} session={session} refresh={refresh} />
+      )}
+      {view === "profile" && <Profile session={session} />}
+    </>
   );
 }
 

@@ -1,0 +1,135 @@
+{
+  "restaurants": [
+    {
+      "id": "terrasse-main",
+      "name": "Terrasse"
+    }
+  ],
+  "employees": [
+    {
+      "id": "emp-julien",
+      "restaurantId": "terrasse-main",
+      "name": "Julien",
+      "position": "Manager",
+      "phone": "",
+      "email": ""
+    },
+    {
+      "id": "emp-mehssen",
+      "restaurantId": "terrasse-main",
+      "name": "Mehssen",
+      "position": "Server",
+      "phone": "",
+      "email": ""
+    },
+    {
+      "id": "emp-mostafa",
+      "restaurantId": "terrasse-main",
+      "name": "Mostafa",
+      "position": "Kitchen",
+      "phone": "",
+      "email": ""
+    },
+    {
+      "id": "emp-mario",
+      "restaurantId": "terrasse-main",
+      "name": "Mario",
+      "position": "Bar",
+      "phone": "",
+      "email": ""
+    },
+    {
+      "id": "emp-ali-saade",
+      "restaurantId": "terrasse-main",
+      "name": "Ali Saade",
+      "position": "Server",
+      "phone": "",
+      "email": ""
+    },
+    {
+      "id": "emp-rassil",
+      "restaurantId": "terrasse-main",
+      "name": "Rassil",
+      "position": "Host",
+      "phone": "",
+      "email": ""
+    },
+    {
+      "id": "emp-racha",
+      "restaurantId": "terrasse-main",
+      "name": "Racha",
+      "position": "Server",
+      "phone": "",
+      "email": ""
+    },
+    {
+      "id": "emp-laura",
+      "restaurantId": "terrasse-main",
+      "name": "Laura",
+      "position": "Host",
+      "phone": "",
+      "email": ""
+    },
+    {
+      "id": "emp-ali-ahmad",
+      "restaurantId": "terrasse-main",
+      "name": "Ali Ahmad",
+      "position": "Kitchen",
+      "phone": "",
+      "email": ""
+    },
+    {
+      "id": "emp-jad",
+      "restaurantId": "terrasse-main",
+      "name": "Jad",
+      "position": "Bar",
+      "phone": "",
+      "email": ""
+    },
+    {
+      "id": "emp-zelda",
+      "restaurantId": "terrasse-main",
+      "name": "Zelda",
+      "position": "Server",
+      "phone": "",
+      "email": ""
+    },
+    {
+      "id": "emp-assaad",
+      "restaurantId": "terrasse-main",
+      "name": "Assaad",
+      "position": "Kitchen",
+      "phone": "",
+      "email": ""
+    }
+  ],
+  "users": [
+    {
+      "id": "user-admin",
+      "restaurantId": "terrasse-main",
+      "employeeId": "emp-julien",
+      "name": "Terrasse Boss",
+      "email": "boss@terrasse.local",
+      "role": "admin",
+      "passwordHash": "8a368a4093c5de4ca5e68760330b8e37:c910b68fad9b2cef42705f2fb47cc555dc1d0b683cc376772590cc673812aba1"
+    },
+    {
+      "id": "user-julien",
+      "restaurantId": "terrasse-main",
+      "employeeId": "emp-julien",
+      "name": "Julien",
+      "email": "julien@terrasse.local",
+      "role": "employee",
+      "passwordHash": "175ff5e7931052e7ae4d19cadb1a6bb7:0e761de019addeea781569581199565805ab4c4845b1d8da34d146ad4e461cc5"
+    }
+  ],
+  "shifts": [],
+  "reservations": [],
+  "sessions": [
+    {
+      "id": "374e1744-5a72-4211-bb3f-8d62f31158fd",
+      "userId": "user-julien",
+      "createdAt": "2026-08-11T07:50:29.277Z"
+    }
+  ]
+}

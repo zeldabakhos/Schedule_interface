@@ -20,7 +20,7 @@ const shiftSections = [
   }
 ];
 
-const team = ["Julien", "Mehssen", "Mostafa", "Mario", "Ali Saade", "Rassil", "Racha", "Laura", "Ali Ahmad", "Jad", "Zelda", "Assaad"];
+const team = ["Julien", "Mehssen", "Mostafa", "Mario", "Eliane", "Rassil", "Racha", "Laura", "Ali Ahmad", "Assaad", "Zelda"];
 const staffPalette = [
   { text: "#16433d", background: "#dff5ee", border: "#35a285" },
   { text: "#5c2f6f", background: "#f3ddff", border: "#b15fd2" },
@@ -86,11 +86,19 @@ function getStaffColorClass(staff) {
   return `staff-color-${getStaffPaletteIndex(staff)}`;
 }
 
+function sanitizeAssignments(assignments) {
+  if (!Array.isArray(assignments)) {
+    return initialAssignments;
+  }
+
+  return assignments.filter((assignment) => team.includes(assignment.staff));
+}
+
 function loadStoredAssignments() {
   try {
     const storedAssignments = window.localStorage.getItem(assignmentsStorageKey);
 
-    return storedAssignments ? JSON.parse(storedAssignments) : initialAssignments;
+    return storedAssignments ? sanitizeAssignments(JSON.parse(storedAssignments)) : initialAssignments;
   } catch {
     return initialAssignments;
   }
@@ -139,7 +147,7 @@ async function loadPersistedAssignments() {
 
   const data = await response.json();
 
-  return Array.isArray(data.assignments) ? data.assignments : initialAssignments;
+  return sanitizeAssignments(data.assignments);
 }
 
 async function savePersistedAssignments(assignments) {

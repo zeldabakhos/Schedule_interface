@@ -1,3 +1,391 @@
 {
-  "assignments": []
+  "assignments": [
+    {
+      "id": 1781611821981,
+      "week": 0,
+      "day": 0,
+      "shift": "morning",
+      "staff": "Julien",
+      "start": "12:00",
+      "end": "fin de service"
+    },
+    {
+      "id": 1781611841747,
+      "week": 0,
+      "day": 0,
+      "shift": "morning",
+      "staff": "Mehssen",
+      "start": "10:00",
+      "end": "15:00"
+    },
+    {
+      "id": 1781611857288,
+      "week": 0,
+      "day": 0,
+      "shift": "morning",
+      "staff": "Rassil",
+      "start": "12:00",
+      "end": "18:00"
+    },
+    {
+      "id": 1781611863367,
+      "week": 0,
+      "day": 0,
+      "shift": "morning",
+      "staff": "Racha",
+      "start": "12:00",
+      "end": "fin de service"
+    },
+    {
+      "id": 1781611870489,
+      "week": 0,
+      "day": 0,
+      "shift": "morning",
+      "staff": "Mario",
+      "start": "11:00",
+      "end": "fin de service"
+    },
+    {
+      "id": 1781611885635,
+      "week": 0,
+      "day": 0,
+      "shift": "night",
+      "staff": "Mostafa",
+      "start": "15:00",
+      "end": "fermeture"
+    },
+    {
+      "id": 1781611893397,
+      "week": 0,
+      "day": 0,
+      "shift": "night",
+      "staff": "Laura",
+      "start": "18:00",
+      "end": "fermeture"
+    },
+    {
+      "id": 1781611902844,
+      "week": 0,
+      "day": 0,
+      "shift": "night",
+      "staff": "Ali Ahmad",
+      "start": "18:00",
+      "end": "fin de service"
+    },
+    {
+      "id": 1781611917749,
+      "week": 0,
+      "day": 1,
+      "shift": "morning",
+      "staff": "Julien",
+      "start": "12:00",
+      "end": "fin de service"
+    },
+    {
+      "id": 1781611919896,
+      "week": 0,
+      "day": 2,
+      "shift": "morning",
+      "staff": "Julien",
+      "start": "12:00",
+      "end": "fin de service"
+    },
+    {
+      "id": 1781611922021,
+      "week": 0,
+      "day": 3,
+      "shift": "morning",
+      "staff": "Julien",
+      "start": "12:00",
+      "end": "fin de service"
+    },
+    {
+      "id": 1781611924977,
+      "week": 0,
+      "day": 4,
+      "shift": "morning",
+      "staff": "Julien",
+      "start": "12:00",
+      "end": "fin de service"
+    },
+    {
+      "id": 1781611927973,
+      "week": 0,
+      "day": 1,
+      "shift": "morning",
+      "staff": "Rassil",
+      "start": "12:00",
+      "end": "18:00"
+    },
+    {
+      "id": 1781611929962,
+      "week": 0,
+      "day": 2,
+      "shift": "morning",
+      "staff": "Rassil",
+      "start": "12:00",
+      "end": "18:00"
+    },
+    {
+      "id": 1781611932223,
+      "week": 0,
+      "day": 3,
+      "shift": "morning",
+      "staff": "Rassil",
+      "start": "12:00",
+      "end": "18:00"
+    },
+    {
+      "id": 1781611934907,
+      "week": 0,
+      "day": 4,
+      "shift": "morning",
+      "staff": "Rassil",
+      "start": "12:00",
+      "end": "18:00"
+    },
+    {
+      "id": 1781611941314,
+      "week": 0,
+      "day": 1,
+      "shift": "morning",
+      "staff": "Mario",
+      "start": "11:00",
+      "end": "fin de service"
+    },
+    {
+      "id": 1781611943759,
+      "week": 0,
+      "day": 2,
+      "shift": "morning",
+      "staff": "Mario",
+      "start": "11:00",
+      "end": "fin de service"
+    },
+    {
+      "id": 1781611945749,
+      "week": 0,
+      "day": 3,
+      "shift": "morning",
+      "staff": "Mario",
+      "start": "11:00",
+      "end": "fin de service"
+    },
+    {
+      "id": 1781611947938,
+      "week": 0,
+      "day": 4,
+      "shift": "morning",
+      "staff": "Mario",
+      "start": "11:00",
+      "end": "fin de service"
+    },
+    {
+      "id": 1781611953308,
+      "week": 0,
+      "day": 1,
+      "shift": "morning",
+      "staff": "Mehssen",
+      "start": "10:00",
+      "end": "15:00"
+    },
+    {
+      "id": 1781611956231,
+      "week": 0,
+      "day": 2,
+      "shift": "morning",
+      "staff": "Mehssen",
+      "start": "10:00",
+      "end": "15:00"
+    },
+    {
+      "id": 1781611966848,
+      "week": 0,
+      "day": 3,
+      "shift": "morning",
+      "staff": "Mehssen",
+      "start": "10:00",
+      "end": "15:00"
+    },
+    {
+      "id": 1781611969564,
+      "week": 0,
+      "day": 4,
+      "shift": "morning",
+      "staff": "Mehssen",
+      "start": "10:00",
+      "end": "15:00"
+    },
+    {
+      "id": 1781612008960,
+      "week": 0,
+      "day": 5,
+      "shift": "morning",
+      "staff": "Zelda",
+      "start": "12:00",
+      "end": "18:00"
+    },
+    {
+      "id": 1781612075220,
+      "week": 0,
+      "day": 6,
+      "shift": "night",
+      "staff": "Zelda",
+      "start": "18:00",
+      "end": "fermeture"
+    },
+    {
+      "id": 1781612085548,
+      "week": 0,
+      "day": 4,
+      "shift": "night",
+      "staff": "Zelda",
+      "start": "18:00",
+      "end": "fermeture"
+    },
+    {
+      "id": 1781612089024,
+      "week": 0,
+      "day": 2,
+      "shift": "night",
+      "staff": "Zelda",
+      "start": "18:00",
+      "end": "fermeture"
+    },
+    {
+      "week": 0,
+      "day": 1,
+      "shift": "night",
+      "staff": "Mostafa",
+      "start": "15:00",
+      "end": "fermeture",
+      "id": 1781612148132
+    },
+    {
+      "week": 0,
+      "day": 2,
+      "shift": "night",
+      "staff": "Mostafa",
+      "start": "15:00",
+      "end": "fermeture",
+      "id": 1781612148133
+    },
+    {
+      "week": 0,
+      "day": 3,
+      "shift": "night",
+      "staff": "Mostafa",
+      "start": "15:00",
+      "end": "fermeture",
+      "id": 1781612148134
+    },
+    {
+      "week": 0,
+      "day": 4,
+      "shift": "night",
+      "staff": "Mostafa",
+      "start": "15:00",
+      "end": "fermeture",
+      "id": 1781612148135
+    },
+    {
+      "week": 0,
+      "day": 4,
+      "shift": "soir",
+      "staff": "Julien",
+      "start": "18:00",
+      "end": "fermeture",
+      "id": 1786612457104
+    },
+    {
+      "week": 0,
+      "day": 4,
+      "shift": "soir",
+      "staff": "Mehssen",
+      "start": "18:00",
+      "end": "fermeture",
+      "id": 1786612459354
+    },
+    {
+      "week": 0,
+      "day": 4,
+      "shift": "soir",
+      "staff": "Mostafa",
+      "start": "18:00",
+      "end": "fermeture",
+      "id": 1786612462393
+    },
+    {
+      "week": 0,
+      "day": 4,
+      "shift": "soir",
+      "staff": "Mario",
+      "start": "18:00",
+      "end": "fermeture",
+      "id": 1786612464899
+    },
+    {
+      "week": 0,
+      "day": 4,
+      "shift": "soir",
+      "staff": "Rassil",
+      "start": "18:00",
+      "end": "fermeture",
+      "id": 1786612472963
+    },
+    {
+      "week": 0,
+      "day": 4,
+      "shift": "soir",
+      "staff": "Racha",
+      "start": "18:00",
+      "end": "fermeture",
+      "id": 1786612477119
+    },
+    {
+      "week": 0,
+      "day": 4,
+      "shift": "soir",
+      "staff": "Laura",
+      "start": "18:00",
+      "end": "fermeture",
+      "id": 1786612480204
+    },
+    {
+      "week": 0,
+      "day": 4,
+      "shift": "soir",
+      "staff": "Ali Ahmad",
+      "start": "18:00",
+      "end": "fermeture",
+      "id": 1786612484757
+    },
+    {
+      "week": 0,
+      "day": 4,
+      "shift": "soir",
+      "staff": "Zelda",
+      "start": "18:00",
+      "end": "fermeture",
+      "id": 1786612490837
+    },
+    {
+      "week": 0,
+      "day": 4,
+      "shift": "soir",
+      "staff": "Assaad",
+      "start": "18:00",
+      "end": "fermeture",
+      "id": 1786612493872
+    },
+    {
+      "week": 0,
+      "day": 0,
+      "shift": "soir",
+      "staff": "Eliane",
+      "start": "18:00",
+      "end": "fermeture",
+      "id": 1788317335347
+    }
+  ]
 }

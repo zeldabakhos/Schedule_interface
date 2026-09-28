@@ -20,7 +20,7 @@ const shiftSections = [
   }
 ];
 
-const team = ["Julien", "Mehssen", "Mostafa", "Mario", "Eliane", "Rassil", "Racha", "Laura", "Ali Ahmad", "Assaad", "Zelda"];
+const team = ["Julien", "Mehssen", "Mostafa", "Mario", "Eliane", "Rassil", "Racha", "Laura", "Ali Ahmad", "Assaad", "Zelda", "Clara", "Fawzi"];
 const staffPalette = [
   { text: "#16433d", background: "#dff5ee", border: "#35a285" },
   { text: "#5c2f6f", background: "#f3ddff", border: "#b15fd2" },
@@ -33,7 +33,8 @@ const staffPalette = [
   { text: "#4f255f", background: "#ead9f4", border: "#8f55a8" },
   { text: "#2f4a25", background: "#dfefd9", border: "#6a9f5b" },
   { text: "#7b3155", background: "#ffe4f0", border: "#ef9bc2" },
-  { text: "#194061", background: "#e0f2fe", border: "#3b82b6" }
+  { text: "#194061", background: "#e0f2fe", border: "#3b82b6" },
+  { text: "#55321f", background: "#f4e1d6", border: "#c47a4e" }
 ];
 
 const initialAssignments = [];

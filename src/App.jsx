@@ -20,7 +20,7 @@ const shiftSections = [
   }
 ];
 
-const team = ["Julien", "Mehssen", "Mostafa", "Eliane", "Rassil", "Racha", "Laura", "Ali Ahmad", "Assaad", "Zelda", "Azzam", "Mahmoud"];
+const team = ["Julien", "Mehssen", "Mostafa", "Eliane", "Rassil", "Racha", "Laura", "Ali Ahmad", "Assaad", "Zelda", "Azzam", "Mahmoud", "Joseph"];
 const staffPalette = [
   { text: "#16433d", background: "#dff5ee", border: "#35a285" },
   { text: "#5c2f6f", background: "#f3ddff", border: "#b15fd2" },

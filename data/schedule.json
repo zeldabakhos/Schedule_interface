@@ -332,6 +332,15 @@
       "start": "18:00",
       "end": "fermeture",
       "id": 1788317335347
+    },
+    {
+      "week": 0,
+      "day": 0,
+      "shift": "soir",
+      "staff": "Joseph",
+      "start": "18:00",
+      "end": "fermeture",
+      "id": 1793650297251
     }
   ]
 }

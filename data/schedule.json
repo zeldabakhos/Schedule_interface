@@ -37,15 +37,6 @@
       "end": "fin de service"
     },
     {
-      "id": 1781611870489,
-      "week": 0,
-      "day": 0,
-      "shift": "morning",
-      "staff": "Mario",
-      "start": "11:00",
-      "end": "fin de service"
-    },
-    {
       "id": 1781611885635,
       "week": 0,
       "day": 0,
@@ -143,42 +134,6 @@
       "staff": "Rassil",
       "start": "12:00",
       "end": "18:00"
-    },
-    {
-      "id": 1781611941314,
-      "week": 0,
-      "day": 1,
-      "shift": "morning",
-      "staff": "Mario",
-      "start": "11:00",
-      "end": "fin de service"
-    },
-    {
-      "id": 1781611943759,
-      "week": 0,
-      "day": 2,
-      "shift": "morning",
-      "staff": "Mario",
-      "start": "11:00",
-      "end": "fin de service"
-    },
-    {
-      "id": 1781611945749,
-      "week": 0,
-      "day": 3,
-      "shift": "morning",
-      "staff": "Mario",
-      "start": "11:00",
-      "end": "fin de service"
-    },
-    {
-      "id": 1781611947938,
-      "week": 0,
-      "day": 4,
-      "shift": "morning",
-      "staff": "Mario",
-      "start": "11:00",
-      "end": "fin de service"
     },
     {
       "id": 1781611953308,
@@ -314,15 +269,6 @@
       "start": "18:00",
       "end": "fermeture",
       "id": 1786612462393
-    },
-    {
-      "week": 0,
-      "day": 4,
-      "shift": "soir",
-      "staff": "Mario",
-      "start": "18:00",
-      "end": "fermeture",
-      "id": 1786612464899
     },
     {
       "week": 0,

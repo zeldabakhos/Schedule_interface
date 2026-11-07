@@ -21,6 +21,22 @@ const shiftSections = [
 ];
 
 const team = ["Julien", "Mehssen", "Mostafa", "Eliane", "Rassil", "Racha", "Laura", "Ali Ahmad", "Assaad", "Zelda", "Azzam", "Mahmoud", "Joseph"];
+// Keep colors tied to names so roster changes never shift anyone's color.
+const staffPaletteIndexByName = {
+  Julien: 0,
+  Mehssen: 1,
+  Mostafa: 2,
+  Eliane: 4,
+  Rassil: 5,
+  Racha: 6,
+  Laura: 7,
+  "Ali Ahmad": 8,
+  Assaad: 9,
+  Zelda: 10,
+  Azzam: 11,
+  Mahmoud: 12,
+  Joseph: 12,
+};
 const staffPalette = [
   { text: "#16433d", background: "#dff5ee", border: "#35a285" },
   { text: "#5c2f6f", background: "#f3ddff", border: "#b15fd2" },
@@ -78,9 +94,7 @@ function getValidEndMode(shift, endMode) {
 }
 
 function getStaffPaletteIndex(staff) {
-  const index = team.indexOf(staff);
-
-  return index >= 0 ? index % staffPalette.length : 0;
+  return staffPaletteIndexByName[staff] ?? 0;
 }
 
 function getStaffColorClass(staff) {
